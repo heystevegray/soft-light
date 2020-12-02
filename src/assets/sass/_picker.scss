@@ -1,21 +1,30 @@
 .container {
   height: 100%;
   display: grid;
-  grid-template-rows: auto 1fr auto;
-  grid-template-areas: "header" "body" "footer";
+  grid-template-rows: auto 1fr 1fr auto;
+  grid-template-areas: "header" "description" "body" "footer";
 
   .header {
     grid-area: header;
   }
 
+  .description {
+    grid-area: description;
+    @include center;
+
+    &__container {
+      max-width: 500px;
+    }
+  }
+
   .body {
     grid-area: body;
-
+    text-align: center;
     height: 100%;
 
     .pickers {
-      height: 100%;
       @include center;
+
       .picker {
         background: var(--dark) !important;
         color: var(--light) !important;
