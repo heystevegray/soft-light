@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from "react"
 import Fab from "@material-ui/core/Fab"
-import EditIcon from "@material-ui/icons/Edit"
+import ColorizeIcon from "@material-ui/icons/Colorize"
+import PaletteIcon from "@material-ui/icons/Palette"
 import { makeStyles } from "@material-ui/core/styles"
-import Button from "@material-ui/core/Button"
+import { AppBar, IconButton, Toolbar, Typography } from "@material-ui/core"
+import { Save } from "@material-ui/icons"
 import { SwatchesPicker, ChromePicker, ColorResult } from "react-color"
-import "../assets/sass/base.scss"
+import "../assets/sass/index.scss"
 
 interface State {
   defaultColor: ColorResult
   backgroundColor: ColorResult
   recentColors: ColorResult[]
+  usePalette: boolean
 }
 
 const STORAGE_KEY = "soft-light-data"
@@ -26,6 +29,7 @@ const initialState: State = {
     rgb: { r: 0, g: 0, b: 0, a: 0 },
   },
   recentColors: [],
+  usePalette: false,
 }
 
 export default function Home() {
@@ -33,6 +37,7 @@ export default function Home() {
   const [state, setState] = useState<State>(
     (storage && JSON.parse(storage)) || initialState
   )
+  const [usePalette, setUsePalette] = useState(state.usePalette || false)
 
   useEffect(() => {
     saveLocalStorage()
@@ -40,6 +45,12 @@ export default function Home() {
 
   const handleColorChange = (color: ColorResult): void => {
     setState(state => ({ ...state, backgroundColor: color }))
+  }
+
+  const togglePalette = (): void => {
+    const value = !usePalette
+    setUsePalette(value)
+    setState(state => ({ ...state, usePalette: value }))
   }
 
   const saveDefault = (): void => {
@@ -69,41 +80,105 @@ export default function Home() {
   const alpha = state.backgroundColor?.rgb.a || 1
   const hex = state.backgroundColor?.hex || "#000000"
 
+  const useStyles = makeStyles(theme => ({
+    text: {
+      padding: theme.spacing(2, 2, 0),
+      fontSize: "1.5em",
+    },
+    appBar: {
+      backgroundColor: "var(--dark)",
+    },
+    grow: {
+      flexGrow: 1,
+    },
+    fabButton: {
+      position: "absolute",
+      zIndex: 1,
+      top: -30,
+      left: 0,
+      right: 0,
+      margin: "0 auto",
+    },
+  }))
+
+  const classes = useStyles()
+
+  const swatchStyles = {
+    default: {
+      overflow: {
+        backgroundColor: "var(--dark)",
+      },
+    },
+  }
+
   return (
     <div className="page" style={{ background: formatColor(hex, alpha) }}>
-      <h1>soft light</h1>
-      <div className="colors">
-        <ChromePicker
-          className="picker"
-          color={state.backgroundColor.rgb}
-          onChange={handleColorChange}
-          onChangeComplete={handleColorChange}
-        />
-        <SwatchesPicker
-          className="picker"
-          color={state.backgroundColor.rgb}
-          onChange={handleColorChange}
-          onChangeComplete={handleColorChange}
-        />
-        {/* <Fab color="secondary" aria-label="edit">
-          <EditIcon />
-        </Fab> */}
-        {/* <div className="container">
-          {state.recentColors.map((color: ColorResult, index: number) => (
-            <div
-              key={index}
-              className="recent"
-              style={{ background: formatColor(color.hex, color.rgb.a) }}
-            >
-              <p>{formatColor(color.hex, color.rgb.a)}</p>
-            </div>
-          ))}
-        </div> */}
-      </div>
-      <div>
-        <Button variant="outlined" color="primary" onClick={saveDefault}>
-          Save Default Color
-        </Button>
+      <div className="container">
+        <div className="header">
+          <Typography className={classes.text} variant="h1" gutterBottom>
+            soft light
+          </Typography>
+        </div>
+        <div className="body">
+          <div className="pickers">
+            {!usePalette && (
+              <ChromePicker
+                className="picker"
+                color={state.backgroundColor.rgb}
+                onChange={handleColorChange}
+                onChangeComplete={handleColorChange}
+              />
+            )}
+            {usePalette && (
+              <SwatchesPicker
+                styles={swatchStyles}
+                color={state.backgroundColor.rgb}
+                onChange={handleColorChange}
+                onChangeComplete={handleColorChange}
+              />
+            )}
+          </div>
+        </div>
+        <div className="footer">
+          <AppBar
+            position="relative"
+            color="primary"
+            className={classes.appBar}
+          >
+            <Toolbar>
+              <IconButton
+                className="icon"
+                edge="start"
+                color="inherit"
+                aria-label="Colorize"
+                onClick={togglePalette}
+              >
+                <ColorizeIcon />
+              </IconButton>
+              <Fab
+                aria-label="Save"
+                className={classes.fabButton}
+                style={{
+                  background: "var(--light)",
+                  color: state.backgroundColor.hex,
+                }}
+                onClick={saveDefault}
+              >
+                <Save />
+              </Fab>
+              <div className={classes.grow} />
+              <IconButton
+                className="icon"
+                edge="end"
+                aria-label="Palette"
+                color="inherit"
+                onClick={togglePalette}
+              >
+                <PaletteIcon />
+              </IconButton>
+            </Toolbar>
+          </AppBar>
+        </div>
       </div>
     </div>
   )

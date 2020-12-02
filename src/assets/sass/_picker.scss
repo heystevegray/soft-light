@@ -1,0 +1,40 @@
+.container {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas: "header" "body" "footer";
+
+  .header {
+    grid-area: header;
+  }
+
+  .body {
+    grid-area: body;
+
+    height: 100%;
+
+    .pickers {
+      height: 100%;
+      @include center;
+      .picker {
+        background: var(--dark) !important;
+        color: var(--light) !important;
+
+        svg,
+        label {
+          fill: var(--light) !important;
+          color: var(--light) !important;
+
+          &:hover {
+            background: black !important;
+          }
+        }
+      }
+    }
+  }
+
+  .footer {
+    position: relative;
+    grid-area: footer;
+  }
+}
