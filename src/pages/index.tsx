@@ -4,7 +4,7 @@ import ColorizeIcon from "@material-ui/icons/Colorize"
 import PaletteIcon from "@material-ui/icons/Palette"
 import { makeStyles } from "@material-ui/core/styles"
 import { AppBar, IconButton, Toolbar, Typography } from "@material-ui/core"
-import { Save } from "@material-ui/icons"
+import { Save, Edit } from "@material-ui/icons"
 import { SwatchesPicker, ChromePicker, ColorResult } from "react-color"
 import "../assets/sass/index.scss"
 
@@ -17,10 +17,15 @@ interface State {
 
 const messages = [
   "Free lighting what's up",
-  "Adjust the background color of this page to match your lighting conditions",
+  "Adjust the background color of this page and use your screen as a soft light source for your face",
+  "This really brings our your eyes!",
+  "Choose a background color that makes you look good for video calls",
+  "Pick a background color to use as additional lighting from your monitor, or monitors 😎 ",
   "soft light, for everyone",
-  "soft light, it's lit",
+  "soft light, it's lit (travis scott reverb)",
   "Look how beautiful you are!",
+  "Looking good",
+  `"When will my reflection show, who I am, inside."`,
 ]
 
 const STORAGE_KEY = "soft-light-data"
@@ -42,16 +47,34 @@ const initialState: State = {
 
 export default function Home() {
   const storage = localStorage.getItem(STORAGE_KEY)
+  const [showPicker, setShowPicker] = useState(false)
+  const [messageIndex, setMessageIndex] = useState(0)
+  const [hexWithAlpha, setHexWithAlpha] = useState("")
   const [state, setState] = useState<State>(
     (storage && JSON.parse(storage)) || initialState
   )
-  const [usePalette, setUsePalette] = useState(state.usePalette || false)
-  const [showPicker, setShowPicker] = useState(false)
-  const [messageIndex, setMessageIndex] = useState(0)
 
   useEffect(() => {
     saveLocalStorage()
   }, [state])
+
+  useEffect(() => {
+    const alpha = state.backgroundColor?.rgb.a || 1
+    const hex = state.backgroundColor?.hex || "#000000"
+    setHexWithAlpha(formatColor(hex, alpha))
+  }, [state.backgroundColor])
+
+  useEffect(() => {
+    const alpha = state.defaultColor?.rgb.a || 1
+    const hex = state.defaultColor?.hex || "#000000"
+    setState(state => ({ ...state, backgroundColor: state.defaultColor }))
+    setHexWithAlpha(formatColor(hex, alpha))
+  }, [])
+
+  const formatColor = (hex = "#000000", alpha = 1): string => {
+    const brightness = Math.round(alpha * 255).toString(16)
+    return `${hex}${brightness}` || "black"
+  }
 
   const getRandomNumber = (min = 0, max = messages.length - 1): number => {
     const randomNumber = Math.random() * (max - min + 1) + min
@@ -62,9 +85,15 @@ export default function Home() {
     setState(state => ({ ...state, backgroundColor: color }))
   }
 
+  const handleEdit = (): void => {
+    setShowPicker(!showPicker)
+
+    // Reset to the default color if the user did not save?????
+    // setState(state => ({ ...state, backgroundColor: state.defaultColor }))
+  }
+
   const togglePalette = (usePalette: boolean): void => {
     setMessageIndex(getRandomNumber())
-    setUsePalette(usePalette)
     setState(state => ({ ...state, usePalette: usePalette }))
     setShowPicker(true)
   }
@@ -87,23 +116,18 @@ export default function Home() {
     )
   }
 
-  const formatColor = (hex = "#000000", alpha = 1): string => {
-    const brightness = Math.round(alpha * 255).toString(16)
-    return `${hex}${brightness}` || "black"
-  }
-
-  const alpha = state.backgroundColor?.rgb.a || 1
-  const hex = state.backgroundColor?.hex || "#000000"
-
   const useStyles = makeStyles(theme => ({
     text: {
-      padding: theme.spacing(2, 2, 0),
       fontSize: "1.25em",
       color: "var(--light)",
       textShadow: "var(--textShadow)",
     },
     appBar: {
       backgroundColor: "var(--dark)",
+    },
+    header: {
+      backgroundColor: "transparent",
+      boxShadow: "none",
     },
     grow: {
       flexGrow: 1,
@@ -115,6 +139,10 @@ export default function Home() {
       left: 0,
       right: 0,
       margin: "0 auto",
+    },
+    colorFab: {
+      background: "var(--light)",
+      color: state.backgroundColor.hex,
     },
   }))
 
@@ -129,18 +157,31 @@ export default function Home() {
   }
 
   return (
-    <div className="page" style={{ background: formatColor(hex, alpha) }}>
+    <div className="page" style={{ background: hexWithAlpha }}>
       <div className="container">
         <div className="header">
-          <Typography
-            tabIndex={1}
-            aria-label="soft light"
-            className={classes.text}
-            variant="h1"
-            gutterBottom
-          >
-            soft light
-          </Typography>
+          <AppBar className={classes.header}>
+            <Toolbar>
+              <Typography
+                tabIndex={1}
+                aria-label="soft light"
+                className={classes.text}
+                variant="h1"
+                gutterBottom
+              >
+                soft light
+              </Typography>
+              <div className={classes.grow} />
+              <Fab
+                aria-label="Edit"
+                size="small"
+                className={classes.colorFab}
+                onClick={handleEdit}
+              >
+                <Edit />
+              </Fab>
+            </Toolbar>
+          </AppBar>
         </div>
         {showPicker && (
           <>
@@ -159,7 +200,7 @@ export default function Home() {
             </div>
             <div className="body">
               <div className="pickers">
-                {!usePalette && (
+                {!state.usePalette && (
                   <ChromePicker
                     className="picker"
                     color={state.backgroundColor.rgb}
@@ -167,8 +208,9 @@ export default function Home() {
                     onChangeComplete={handleColorChange}
                   />
                 )}
-                {usePalette && (
+                {state.usePalette && (
                   <SwatchesPicker
+                    className="picker"
                     styles={swatchStyles}
                     color={state.backgroundColor.rgb}
                     onChange={handleColorChange}
@@ -197,11 +239,7 @@ export default function Home() {
               </IconButton>
               <Fab
                 aria-label="Save"
-                className={classes.fabButton}
-                style={{
-                  background: "var(--light)",
-                  color: state.backgroundColor.hex,
-                }}
+                className={`${classes.fabButton} ${classes.colorFab}`}
                 onClick={saveDefault}
               >
                 <Save />
