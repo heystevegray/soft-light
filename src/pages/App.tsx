@@ -11,9 +11,10 @@ import {
   Button,
   Snackbar,
   Link,
+  Tooltip,
 } from "@material-ui/core"
 import Alert from "@material-ui/lab/Alert"
-import { Save, Edit } from "@material-ui/icons"
+import { Save, Edit, Power, PowerSettingsNew } from "@material-ui/icons"
 import { SwatchesPicker, ChromePicker, ColorResult } from "react-color"
 import "../assets/sass/index.scss"
 
@@ -57,6 +58,7 @@ const initialState: State = {
 export default function App() {
   const storage = localStorage.getItem(STORAGE_KEY)
   const [showPicker, setShowPicker] = useState(false)
+  const [lightsOut, setLightsOut] = useState(false)
   const [messageIndex, setMessageIndex] = useState(0)
   const [hexWithAlpha, setHexWithAlpha] = useState("")
   const [showNotification, setShowNotification] = useState(false)
@@ -80,6 +82,19 @@ export default function App() {
     setState(state => ({ ...state, backgroundColor: state.defaultColor }))
     setHexWithAlpha(formatColor(hex, alpha))
   }, [])
+
+  useEffect(() => {
+    const off: ColorResult = {
+      ...state.backgroundColor,
+      hex: "#000000",
+    }
+    const color = lightsOut ? off : state.defaultColor
+
+    setState(state => ({
+      ...state,
+      backgroundColor: color,
+    }))
+  }, [lightsOut])
 
   const formatColor = (hex = "#000000", alpha = 1): string => {
     const brightness = Math.round(alpha * 255).toString(16)
@@ -135,6 +150,10 @@ export default function App() {
     setShowNotification(false)
   }
 
+  const handleLightsOut = (): void => {
+    setLightsOut(!lightsOut)
+  }
+
   const useStyles = makeStyles(theme => ({
     root: {
       width: "100%",
@@ -158,8 +177,12 @@ export default function App() {
       flexGrow: 1,
     },
     alert: {
+      marginTop: "3rem",
       background: "var(--light)",
       color: "var(--dark)",
+    },
+    headerIcon: {
+      marginLeft: "1rem",
     },
     fabButton: {
       position: "absolute",
@@ -203,14 +226,26 @@ export default function App() {
                 </Typography>
               </Link>
               <div className={classes.grow} />
-              <Fab
-                aria-label="Edit"
-                size="small"
-                className={classes.colorFab}
-                onClick={handleEdit}
-              >
-                <Edit />
-              </Fab>
+              <Tooltip title="Lights Out">
+                <Fab
+                  aria-label="Lights Out"
+                  size="small"
+                  className={`${classes.colorFab} ${classes.headerIcon}`}
+                  onClick={handleLightsOut}
+                >
+                  <PowerSettingsNew />
+                </Fab>
+              </Tooltip>
+              <Tooltip title="Edit">
+                <Fab
+                  aria-label="Edit"
+                  size="small"
+                  className={`${classes.colorFab} ${classes.headerIcon}`}
+                  onClick={handleEdit}
+                >
+                  <Edit />
+                </Fab>
+              </Tooltip>
             </Toolbar>
           </AppBar>
         </div>
@@ -259,32 +294,38 @@ export default function App() {
             className={classes.appBar}
           >
             <Toolbar>
-              <IconButton
-                className="icon"
-                edge="start"
-                color="inherit"
-                aria-label="Colorize"
-                onClick={() => togglePalette(false)}
-              >
-                <ColorizeIcon />
-              </IconButton>
-              <Fab
-                aria-label="Save"
-                className={`${classes.fabButton} ${classes.colorFab}`}
-                onClick={saveDefault}
-              >
-                <Save />
-              </Fab>
+              <Tooltip title="Color Picker">
+                <IconButton
+                  className="icon"
+                  edge="start"
+                  color="inherit"
+                  aria-label="Color Picker"
+                  onClick={() => togglePalette(false)}
+                >
+                  <ColorizeIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Save">
+                <Fab
+                  aria-label="Save"
+                  className={`${classes.fabButton} ${classes.colorFab}`}
+                  onClick={saveDefault}
+                >
+                  <Save />
+                </Fab>
+              </Tooltip>
               <div className={classes.grow} />
-              <IconButton
-                className="icon"
-                edge="end"
-                aria-label="Palette"
-                color="inherit"
-                onClick={() => togglePalette(true)}
-              >
-                <PaletteIcon />
-              </IconButton>
+              <Tooltip title="Color Palette">
+                <IconButton
+                  className="icon"
+                  edge="end"
+                  aria-label="Color Palette"
+                  color="inherit"
+                  onClick={() => togglePalette(true)}
+                >
+                  <PaletteIcon />
+                </IconButton>
+              </Tooltip>
             </Toolbar>
           </AppBar>
         </div>
