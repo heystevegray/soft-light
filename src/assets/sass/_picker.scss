@@ -11,6 +11,9 @@
   .description {
     grid-area: description;
     @include center;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    text-align: center;
 
     &__container {
       max-width: 500px;
