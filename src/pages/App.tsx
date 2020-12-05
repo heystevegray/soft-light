@@ -36,6 +36,7 @@ const messages = [
   "Look how beautiful you are!",
   "Looking good",
   `"When will my reflection show, who I am, inside."`,
+  "Free video conferencing lighting",
 ]
 
 const STORAGE_KEY = "soft-light-data"
