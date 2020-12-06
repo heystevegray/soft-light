@@ -2,21 +2,10 @@ import React, { useState, useEffect } from "react"
 import Fab from "@material-ui/core/Fab"
 import ColorizeIcon from "@material-ui/icons/Colorize"
 import PaletteIcon from "@material-ui/icons/Palette"
-import { makeStyles } from "@material-ui/core/styles"
-import {
-  AppBar,
-  IconButton,
-  Toolbar,
-  Typography,
-  Button,
-  Snackbar,
-  Link,
-  Tooltip,
-} from "@material-ui/core"
+import { IconButton, Snackbar, Link, Tooltip } from "@material-ui/core"
 import Alert from "@material-ui/lab/Alert"
-import { Save, Edit, Power, PowerSettingsNew } from "@material-ui/icons"
+import { Save, Edit, PowerSettingsNew } from "@material-ui/icons"
 import { SwatchesPicker, ChromePicker, ColorResult } from "react-color"
-import "../assets/sass/index.scss"
 
 interface State {
   defaultColor: ColorResult
@@ -86,9 +75,11 @@ export default function App() {
 
   useEffect(() => {
     const off: ColorResult = {
-      ...state.backgroundColor,
       hex: "#000000",
+      hsl: { h: 0, s: 0, l: 0, a: 1 },
+      rgb: { r: 0, g: 0, b: 0, a: 1 },
     }
+
     const color = lightsOut ? off : state.defaultColor
 
     setState(state => ({
@@ -155,52 +146,6 @@ export default function App() {
     setLightsOut(!lightsOut)
   }
 
-  const useStyles = makeStyles(theme => ({
-    root: {
-      width: "100%",
-      "& > * + *": {
-        marginTop: theme.spacing(2),
-      },
-    },
-    text: {
-      fontSize: "1.25em",
-      color: "var(--light)",
-      textShadow: "var(--textShadow)",
-    },
-    appBar: {
-      backgroundColor: "var(--dark)",
-    },
-    header: {
-      backgroundColor: "transparent",
-      boxShadow: "none",
-    },
-    grow: {
-      flexGrow: 1,
-    },
-    alert: {
-      marginTop: "3rem",
-      background: "var(--light)",
-      color: "var(--dark)",
-    },
-    headerIcon: {
-      marginLeft: "1rem",
-    },
-    fabButton: {
-      position: "absolute",
-      zIndex: 1,
-      top: -30,
-      left: 0,
-      right: 0,
-      margin: "0 auto",
-    },
-    colorFab: {
-      background: "var(--light)",
-      color: state.backgroundColor.hex,
-    },
-  }))
-
-  const classes = useStyles()
-
   const swatchStyles = {
     default: {
       overflow: {
@@ -210,141 +155,112 @@ export default function App() {
   }
 
   return (
-    <div className="page" style={{ background: hexWithAlpha }}>
-      <div className="container">
-        <div className="header">
-          <AppBar className={classes.header}>
-            <Toolbar>
-              <Link href="/">
-                <Typography
-                  tabIndex={1}
-                  aria-label="soft light"
-                  className={classes.text}
-                  variant="h1"
-                  gutterBottom
-                >
-                  soft light
-                </Typography>
-              </Link>
-              <div className={classes.grow} />
-              <Tooltip title="Lights Out">
-                <Fab
-                  aria-label="Lights Out"
-                  size="small"
-                  className={`${classes.colorFab} ${classes.headerIcon}`}
-                  onClick={handleLightsOut}
-                >
-                  <PowerSettingsNew />
-                </Fab>
-              </Tooltip>
-              <Tooltip title="Edit">
-                <Fab
-                  aria-label="Edit"
-                  size="small"
-                  className={`${classes.colorFab} ${classes.headerIcon}`}
-                  onClick={handleEdit}
-                >
-                  <Edit />
-                </Fab>
-              </Tooltip>
-            </Toolbar>
-          </AppBar>
-        </div>
-        {showPicker && (
-          <>
-            <div className="description">
-              <div className="description__container">
-                <Typography
-                  tabIndex={2}
-                  aria-label="description of soft light"
-                  className={classes.text}
-                  variant="body1"
-                  gutterBottom
-                >
-                  {messages[messageIndex]}
-                </Typography>
-              </div>
-            </div>
-            <div className="body">
-              <div className="pickers">
-                {!state.usePalette && (
-                  <ChromePicker
-                    className="picker"
-                    color={state.backgroundColor.rgb}
-                    onChange={handleColorChange}
-                    onChangeComplete={handleColorChange}
-                  />
-                )}
-                {state.usePalette && (
-                  <SwatchesPicker
-                    className="picker"
-                    styles={swatchStyles}
-                    color={state.backgroundColor.rgb}
-                    onChange={handleColorChange}
-                    onChangeComplete={handleColorChange}
-                  />
-                )}
-              </div>
-            </div>
-          </>
-        )}
-        <div className="footer">
-          <AppBar
-            position="relative"
-            color="primary"
-            className={classes.appBar}
+    <div
+      className="font-sans grid gap-4 grid-rows-layout base"
+      style={{ background: hexWithAlpha }}
+    >
+      <div className="pt-4 inline-grid grid-cols-appbar gap-x-4">
+        <Link href="/" tabIndex={1}>
+          <h1 className="pl-4 text-lg text-shadow" aria-label="soft light">
+            soft light
+          </h1>
+        </Link>
+        <Tooltip title="Lights Out">
+          <Fab
+            style={{ background: "var(--light)" }}
+            aria-label="Lights Out"
+            size="small"
+            onClick={handleLightsOut}
           >
-            <Toolbar>
-              <Tooltip title="Color Picker">
-                <IconButton
-                  className="icon"
-                  edge="start"
-                  color="inherit"
-                  aria-label="Color Picker"
-                  onClick={() => togglePalette(false)}
-                >
-                  <ColorizeIcon />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Save">
-                <Fab
-                  aria-label="Save"
-                  className={`${classes.fabButton} ${classes.colorFab}`}
-                  onClick={saveDefault}
-                >
-                  <Save />
-                </Fab>
-              </Tooltip>
-              <div className={classes.grow} />
-              <Tooltip title="Color Palette">
-                <IconButton
-                  className="icon"
-                  edge="end"
-                  aria-label="Color Palette"
-                  color="inherit"
-                  onClick={() => togglePalette(true)}
-                >
-                  <PaletteIcon />
-                </IconButton>
-              </Tooltip>
-            </Toolbar>
-          </AppBar>
+            <PowerSettingsNew style={{ color: hexWithAlpha }} />
+          </Fab>
+        </Tooltip>
+        <div className="pr-4">
+          <Tooltip title="Edit">
+            <Fab
+              style={{ background: "var(--light)" }}
+              aria-label="Edit"
+              size="small"
+              onClick={handleEdit}
+            >
+              <Edit style={{ color: hexWithAlpha }} />
+            </Fab>
+          </Tooltip>
         </div>
-        <Snackbar
-          open={showNotification}
-          autoHideDuration={6000}
-          anchorOrigin={{ vertical: "top", horizontal: "right" }}
-          onClose={handleNotificationClose}
-        >
-          <Alert
-            onClose={handleNotificationClose}
-            className={classes.alert}
-            severity="success"
-          >
-            {`Saved default soft light as ${hexWithAlpha} 👍`}
-          </Alert>
-        </Snackbar>
       </div>
+      <div className="p-4 max-w-lg place-self-center align-middle">
+        <h2
+          tabIndex={2}
+          aria-label="description of soft light"
+          className="text-3xl text-center"
+        >
+          {messages[messageIndex]}
+        </h2>
+      </div>
+      {state.usePalette ? (
+        <SwatchesPicker
+          className="place-self-center"
+          styles={swatchStyles}
+          color={state.backgroundColor.rgb}
+          onChange={handleColorChange}
+          onChangeComplete={handleColorChange}
+        />
+      ) : (
+        <ChromePicker
+          className="place-self-center"
+          color={state.backgroundColor.rgb}
+          onChange={handleColorChange}
+          onChangeComplete={handleColorChange}
+        />
+      )}
+      <div className="inline-grid px-8 inline-grid grid-cols-toolbar gap-x-4 toolbar">
+        <Tooltip title="Color Picker">
+          <IconButton
+            edge="start"
+            color="inherit"
+            aria-label="Color Picker"
+            onClick={() => togglePalette(false)}
+          >
+            <ColorizeIcon className="icon" />
+          </IconButton>
+        </Tooltip>
+        <div className="place-self-center fab">
+          <Tooltip title="Save">
+            <Fab
+              style={{ background: "var(--light)" }}
+              aria-label="Save"
+              onClick={saveDefault}
+            >
+              <Save style={{ color: hexWithAlpha }} />
+            </Fab>
+          </Tooltip>
+        </div>
+        <Tooltip title="Color Palette">
+          <IconButton
+            edge="end"
+            aria-label="Color Palette"
+            color="inherit"
+            onClick={() => togglePalette(true)}
+          >
+            <PaletteIcon className="icon" />
+          </IconButton>
+        </Tooltip>
+      </div>
+      <Snackbar
+        className="mt-12"
+        open={showNotification}
+        autoHideDuration={6000}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+        onClose={handleNotificationClose}
+      >
+        <Alert
+          className="alert"
+          onClose={handleNotificationClose}
+          severity="success"
+        >
+          {`Saved default soft light as ${hexWithAlpha} 👍`}
+        </Alert>
+      </Snackbar>
     </div>
   )
 }
