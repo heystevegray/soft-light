@@ -17,7 +17,7 @@ module.exports = {
         layout: "auto 1fr 3fr 64px",
       },
       gridTemplateColumns: {
-        appbar: "1fr auto auto",
+        appbar: "1fr auto auto auto",
         toolbar: "auto 1fr auto",
       },
     },

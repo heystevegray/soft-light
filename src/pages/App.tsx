@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, ReactElement } from "react"
 import Fab from "@material-ui/core/Fab"
 import ColorizeIcon from "@material-ui/icons/Colorize"
 import PaletteIcon from "@material-ui/icons/Palette"
 import { IconButton, Snackbar, Link, Tooltip } from "@material-ui/core"
 import Alert from "@material-ui/lab/Alert"
-import { Save, Edit, PowerSettingsNew } from "@material-ui/icons"
+import { Save, Edit, PowerSettingsNew, OpenInNew } from "@material-ui/icons"
 import { SwatchesPicker, ChromePicker, ColorResult } from "react-color"
+import parse from "html-react-parser"
 
 interface State {
   defaultColor: ColorResult
@@ -16,14 +17,12 @@ interface State {
 
 const messages = [
   "Free lighting what's up",
-  "Adjust the background color of this page and use your screen as a soft light source for your face",
-  "This really brings our your eyes!",
-  "Choose a background color that makes you look good for video calls",
-  "Pick a background color to use as additional lighting from your monitor, or monitors 😎 ",
+  "This one really brings out your eyes",
+  'Change the background color of your screen, or screens 😎 <a target="_blank" href="/">open another tab</a>!',
+  'Inspired by Julie Schiro\'s <a target="_blank" href="https://www.youtube.com/watch?v=jiUpK0dhWTE&t=421s&ab_channel=JulieSchiro">"secret monitor hack"</a>, go give it a watch. Thank you Julie!',
   "soft light, for everyone",
   "soft light, it's lit (travis scott reverb)",
   "Look how beautiful you are!",
-  "Looking good",
   `"When will my reflection show, who I am, inside."`,
   "Free video conferencing lighting",
 ]
@@ -100,6 +99,11 @@ export default function App() {
 
   const handleColorChange = (color: ColorResult): void => {
     setState(state => ({ ...state, backgroundColor: color }))
+
+    // Hide notifications
+    if (showNotification) {
+      setShowNotification(false)
+    }
   }
 
   const handleEdit = (): void => {
@@ -154,6 +158,8 @@ export default function App() {
     },
   }
 
+  const message = parse(messages[messageIndex])
+
   return (
     <div
       className="font-sans grid gap-4 grid-rows-layout base"
@@ -175,6 +181,17 @@ export default function App() {
             <PowerSettingsNew style={{ color: hexWithAlpha }} />
           </Fab>
         </Tooltip>
+        <Tooltip title="Duplicate Tab">
+          <a target="_blank" href="/">
+            <Fab
+              style={{ background: "var(--light)" }}
+              aria-label="Lights Out"
+              size="small"
+            >
+              <OpenInNew style={{ color: hexWithAlpha }} />
+            </Fab>
+          </a>
+        </Tooltip>
         <div className="pr-4">
           <Tooltip title="Edit">
             <Fab
@@ -192,9 +209,9 @@ export default function App() {
         <h2
           tabIndex={2}
           aria-label="description of soft light"
-          className="text-3xl text-center"
+          className="text-2xl text-center "
         >
-          {messages[messageIndex]}
+          {message}
         </h2>
       </div>
       {state.usePalette ? (
@@ -247,7 +264,7 @@ export default function App() {
         </Tooltip>
       </div>
       <Snackbar
-        className="mt-12"
+        className="mt-16"
         open={showNotification}
         autoHideDuration={6000}
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
@@ -258,7 +275,10 @@ export default function App() {
           onClose={handleNotificationClose}
           severity="success"
         >
-          {`Saved default soft light as ${hexWithAlpha} 👍`}
+          {`Saved default soft light as ${formatColor(
+            state.defaultColor.hex,
+            state.defaultColor.rgb.a
+          )} 👍`}
         </Alert>
       </Snackbar>
     </div>
