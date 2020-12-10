@@ -8,6 +8,6 @@
       ]
     }],
     "block-no-empty": null,
-    "unit-whitelist": ["vh", "vw", "px", "em", "rem", "s"]
+    "unit-whitelist": ["vh", "vw", "px", "em", "rem", "s", "%", "fr"]
   }
 }

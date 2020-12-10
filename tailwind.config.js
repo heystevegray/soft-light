@@ -14,10 +14,10 @@ module.exports = {
     },
     extend: {
       gridTemplateRows: {
-        layout: "auto 1fr 3fr 64px",
+        layout: "auto minmax(0, auto) 1fr 3fr 64px",
       },
       gridTemplateColumns: {
-        appbar: "1fr auto auto auto",
+        appbar: "1fr auto auto auto auto",
         toolbar: "auto 1fr auto",
       },
     },

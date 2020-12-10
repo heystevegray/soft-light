@@ -1,19 +1,22 @@
-import React, { useState, useEffect, ReactElement } from "react"
+import React, { useState, useEffect } from "react"
 import Fab from "@material-ui/core/Fab"
 import ColorizeIcon from "@material-ui/icons/Colorize"
 import PaletteIcon from "@material-ui/icons/Palette"
 import { IconButton, Snackbar, Link, Tooltip } from "@material-ui/core"
 import Alert from "@material-ui/lab/Alert"
-import { Save, Edit, PowerSettingsNew, OpenInNew } from "@material-ui/icons"
+import {
+  Save,
+  Edit,
+  PowerSettingsNew,
+  OpenInNew,
+  Videocam,
+  VideocamOff,
+} from "@material-ui/icons"
 import { SwatchesPicker, ChromePicker, ColorResult } from "react-color"
 import parse from "html-react-parser"
-
-interface State {
-  defaultColor: ColorResult
-  backgroundColor: ColorResult
-  recentColors: ColorResult[]
-  usePalette: boolean
-}
+import Picker from "../components/Picker/Picker"
+import { State } from "../interfaces/State"
+import adapter from "webrtc-adapter"
 
 const messages = [
   "Free lighting what's up",
@@ -29,7 +32,7 @@ const messages = [
 
 const STORAGE_KEY = "soft-light-data"
 
-const initialState: State = {
+export const initialState: State = {
   defaultColor: {
     hex: "#000000",
     hsl: { h: 0, s: 0, l: 0, a: 0 },
@@ -40,19 +43,35 @@ const initialState: State = {
     hsl: { h: 0, s: 0, l: 0, a: 0 },
     rgb: { r: 0, g: 0, b: 0, a: 0 },
   },
-  recentColors: [],
   usePalette: false,
+}
+
+const off: ColorResult = {
+  hex: "#000000",
+  hsl: { h: 0, s: 0, l: 0, a: 1 },
+  rgb: { r: 0, g: 0, b: 0, a: 1 },
+}
+
+const constraints: MediaStreamConstraints = {
+  audio: false,
+  video: {
+    facingMode: "user",
+  },
 }
 
 export default function App() {
   const storage = localStorage.getItem(STORAGE_KEY)
+  const storageState: State = (storage && JSON.parse(storage)) || initialState
   const [showPicker, setShowPicker] = useState(false)
   const [lightsOut, setLightsOut] = useState(false)
   const [messageIndex, setMessageIndex] = useState(0)
   const [hexWithAlpha, setHexWithAlpha] = useState("")
   const [showNotification, setShowNotification] = useState(false)
-  const [state, setState] = useState<State>(
-    (storage && JSON.parse(storage)) || initialState
+  const [showVideo, setShowVideo] = useState(false)
+  const [videoSupported, setVideoSupported] = useState(false)
+  const [state, setState] = useState<State>(storageState)
+  const [oldColor, setOldColor] = useState<ColorResult>(
+    storageState.backgroundColor
   )
 
   useEffect(() => {
@@ -66,26 +85,111 @@ export default function App() {
   }, [state.backgroundColor])
 
   useEffect(() => {
-    const alpha = state.defaultColor?.rgb.a || 1
-    const hex = state.defaultColor?.hex || "#000000"
-    setState(state => ({ ...state, backgroundColor: state.defaultColor }))
-    setHexWithAlpha(formatColor(hex, alpha))
+    let color = oldColor
+
+    if (lightsOut) {
+      setOldColor(state.backgroundColor)
+      color = off
+    }
+
+    setState(state => ({ ...state, backgroundColor: color }))
+  }, [lightsOut])
+
+  useEffect(() => {
+    const init = async (): Promise<void> => {
+      const alpha = storageState.defaultColor?.rgb.a || 1
+      const hex = storageState.defaultColor?.hex || "#000000"
+      setHexWithAlpha(formatColor(hex, alpha))
+
+      try {
+        await navigator.mediaDevices.enumerateDevices().then(devices => {
+          const cameras = devices.filter(d => d.kind === "videoinput")
+          if (cameras && cameras.length > 0) {
+            setVideoSupported(true)
+          } else {
+            setVideoSupported(false)
+          }
+        })
+      } catch (error) {
+        setVideoSupported(false)
+      }
+    }
+
+    init()
   }, [])
 
   useEffect(() => {
-    const off: ColorResult = {
-      hex: "#000000",
-      hsl: { h: 0, s: 0, l: 0, a: 1 },
-      rgb: { r: 0, g: 0, b: 0, a: 1 },
+    if (videoSupported) {
+      const video: HTMLVideoElement = document.querySelector("video")
+
+      if (showVideo) {
+        startVideoStream(video)
+      } else {
+        stopVideoStream(video)
+      }
+    }
+  }, [showVideo])
+
+  const startVideoStream = (video: HTMLVideoElement): void => {
+    // Older browsers might not implement mediaDevices at all, so we set an empty object first
+    if (navigator.mediaDevices === undefined) {
+      navigator.mediaDevices = {}
     }
 
-    const color = lightsOut ? off : state.defaultColor
+    // Some browsers partially implement mediaDevices. We can't just assign an object
+    // with getUserMedia as it would overwrite existing properties.
+    // Here, we will just add the getUserMedia property if it's missing.
+    if (navigator.mediaDevices.getUserMedia === undefined) {
+      navigator.mediaDevices.getUserMedia = function (constraints) {
+        // First get ahold of the legacy getUserMedia, if present
+        var getUserMedia =
+          navigator?.webkitGetUserMedia || navigator?.mozGetUserMedia
 
-    setState(state => ({
-      ...state,
-      backgroundColor: color,
-    }))
-  }, [lightsOut])
+        // Some browsers just don't implement it - return a rejected promise with an error
+        // to keep a consistent interface
+        if (!getUserMedia) {
+          return Promise.reject(
+            new Error("getUserMedia is not implemented in this browser")
+          )
+        }
+
+        // Otherwise, wrap the call to the old navigator.getUserMedia with a Promise
+        return new Promise(function (resolve, reject) {
+          getUserMedia.call(navigator, constraints, resolve, reject)
+        })
+      }
+    }
+
+    navigator.getUserMedia(
+      constraints,
+      stream => {
+        if (video) {
+          video.srcObject = stream
+        }
+      },
+      error => {
+        console.log(error)
+      }
+    )
+  }
+
+  const stopVideoStream = (video: HTMLVideoElement): void => {
+    if (video) {
+      // A video's MediaStream object is available through its srcObject attribute
+      const stream = video.srcObject
+      const tracks = stream.getTracks()
+
+      tracks.forEach(track => {
+        track.stop()
+      })
+
+      video.srcObject = null
+    }
+  }
+
+  const toggleVideoPreview = (): void => {
+    setShowVideo(!showVideo)
+  }
 
   const formatColor = (hex = "#000000", alpha = 1): string => {
     const brightness = Math.round(alpha * 255).toString(16)
@@ -120,7 +224,7 @@ export default function App() {
   }
 
   const saveDefault = (): void => {
-    setState({ ...state, defaultColor: state.backgroundColor })
+    setState(state => ({ ...state, defaultColor: state.backgroundColor }))
     setShowPicker(false)
     setShowNotification(true)
   }
@@ -130,10 +234,6 @@ export default function App() {
       STORAGE_KEY,
       JSON.stringify({
         ...state,
-        recentColors: [
-          formatColor(state.backgroundColor.hex, state.backgroundColor.rgb.a),
-          ...state.recentColors.slice(0, 4),
-        ],
       })
     )
   }
@@ -148,14 +248,6 @@ export default function App() {
 
   const handleLightsOut = (): void => {
     setLightsOut(!lightsOut)
-  }
-
-  const swatchStyles = {
-    default: {
-      overflow: {
-        backgroundColor: "var(--dark)",
-      },
-    },
   }
 
   const message = parse(messages[messageIndex])
@@ -181,6 +273,33 @@ export default function App() {
             <PowerSettingsNew style={{ color: hexWithAlpha }} />
           </Fab>
         </Tooltip>
+        {videoSupported && (
+          <>
+            {showVideo ? (
+              <Tooltip title="Hide Video Preview">
+                <Fab
+                  style={{ background: "var(--light)" }}
+                  aria-label="Hide Video Preview"
+                  size="small"
+                  onClick={toggleVideoPreview}
+                >
+                  <VideocamOff style={{ color: hexWithAlpha }} />
+                </Fab>
+              </Tooltip>
+            ) : (
+              <Tooltip title="Show Video Preview">
+                <Fab
+                  style={{ background: "var(--light)" }}
+                  aria-label="Show Video Preview"
+                  size="small"
+                  onClick={toggleVideoPreview}
+                >
+                  <Videocam style={{ color: hexWithAlpha }} />
+                </Fab>
+              </Tooltip>
+            )}
+          </>
+        )}
         <Tooltip title="Duplicate Tab">
           <a target="_blank" href="/">
             <Fab
@@ -193,10 +312,10 @@ export default function App() {
           </a>
         </Tooltip>
         <div className="pr-4">
-          <Tooltip title="Edit">
+          <Tooltip title="Toggle Edit">
             <Fab
               style={{ background: "var(--light)" }}
-              aria-label="Edit"
+              aria-label="Toggle Edit"
               size="small"
               onClick={handleEdit}
             >
@@ -205,31 +324,29 @@ export default function App() {
           </Tooltip>
         </div>
       </div>
-      <div className="p-4 max-w-lg place-self-center align-middle">
-        <h2
-          tabIndex={2}
-          aria-label="description of soft light"
-          className="text-2xl text-center "
-        >
-          {message}
-        </h2>
+      <div className="place-self-center w-80">
+        {showVideo && <video id="camera" muted autoPlay />}
       </div>
-      {state.usePalette ? (
-        <SwatchesPicker
-          className="place-self-center"
-          styles={swatchStyles}
-          color={state.backgroundColor.rgb}
-          onChange={handleColorChange}
-          onChangeComplete={handleColorChange}
-        />
-      ) : (
-        <ChromePicker
-          className="place-self-center"
-          color={state.backgroundColor.rgb}
-          onChange={handleColorChange}
-          onChangeComplete={handleColorChange}
-        />
-      )}
+      <div className="p-4 max-w-lg place-self-center align-top">
+        {showPicker && (
+          <h2
+            tabIndex={2}
+            aria-label="description of soft light"
+            className="text-2xl text-center align-top"
+          >
+            {message}
+          </h2>
+        )}
+      </div>
+      <div className="place-self-center">
+        {showPicker && (
+          <Picker
+            usePalette={state.usePalette}
+            state={state || initialState}
+            onChange={handleColorChange}
+          />
+        )}
+      </div>
       <div className="inline-grid px-8 inline-grid grid-cols-toolbar gap-x-4 toolbar">
         <Tooltip title="Color Picker">
           <IconButton
