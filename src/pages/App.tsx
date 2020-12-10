@@ -11,8 +11,10 @@ import {
   OpenInNew,
   Videocam,
   VideocamOff,
+  Fullscreen,
+  FullscreenExit,
 } from "@material-ui/icons"
-import { SwatchesPicker, ChromePicker, ColorResult } from "react-color"
+import { ColorResult } from "react-color"
 import parse from "html-react-parser"
 import Picker from "../components/Picker/Picker"
 import { State } from "../interfaces/State"
@@ -44,6 +46,7 @@ export const initialState: State = {
     rgb: { r: 0, g: 0, b: 0, a: 0 },
   },
   usePalette: false,
+  notification: { message: "", show: false },
 }
 
 const off: ColorResult = {
@@ -66,9 +69,9 @@ export default function App() {
   const [lightsOut, setLightsOut] = useState(false)
   const [messageIndex, setMessageIndex] = useState(0)
   const [hexWithAlpha, setHexWithAlpha] = useState("")
-  const [showNotification, setShowNotification] = useState(false)
   const [showVideo, setShowVideo] = useState(false)
   const [videoSupported, setVideoSupported] = useState(false)
+  const [fullscreen, setFullscreen] = useState(false)
   const [state, setState] = useState<State>(storageState)
   const [oldColor, setOldColor] = useState<ColorResult>(
     storageState.backgroundColor
@@ -124,11 +127,35 @@ export default function App() {
 
       if (showVideo) {
         startVideoStream(video)
+        toggleNotification(true, `Camera enabled 📷`)
       } else {
         stopVideoStream(video)
       }
     }
   }, [showVideo])
+
+  const toggleFullscreen = (isFullscreen: boolean): void => {
+    setFullscreen(isFullscreen)
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => {
+        toggleNotification(true, "Fullscreen enabled 👌")
+      })
+    } else {
+      setFullscreen(isFullscreen)
+      if (document.exitFullscreen) {
+        document.exitFullscreen().then(() => {
+          toggleNotification(true, "Fullscreen disabled 🤙 🤙")
+        })
+      }
+    }
+  }
+
+  const toggleNotification = (show: boolean, message = "") => {
+    setState(state => ({
+      ...state,
+      notification: { show, message },
+    }))
+  }
 
   const startVideoStream = (video: HTMLVideoElement): void => {
     // Older browsers might not implement mediaDevices at all, so we set an empty object first
@@ -187,6 +214,11 @@ export default function App() {
     }
   }
 
+  const handleCameraOff = (): void => {
+    toggleNotification(true, `Camera disabled 👍`)
+    toggleVideoPreview()
+  }
+
   const toggleVideoPreview = (): void => {
     setShowVideo(!showVideo)
   }
@@ -205,13 +237,17 @@ export default function App() {
     setState(state => ({ ...state, backgroundColor: color }))
 
     // Hide notifications
-    if (showNotification) {
-      setShowNotification(false)
+    if (state.notification.show) {
+      toggleNotification(false)
     }
   }
 
   const handleEdit = (): void => {
-    setShowPicker(!showPicker)
+    const state = !showPicker
+    setShowPicker(state)
+
+    const message = state ? "enabled 🎨" : "disabled"
+    toggleNotification(true, `Edit mode ${message}`)
 
     // Reset to the default color if the user did not save?????
     // setState(state => ({ ...state, backgroundColor: state.defaultColor }))
@@ -226,7 +262,7 @@ export default function App() {
   const saveDefault = (): void => {
     setState(state => ({ ...state, defaultColor: state.backgroundColor }))
     setShowPicker(false)
-    setShowNotification(true)
+    toggleNotification(true, `Saved default soft light as ${hexWithAlpha} 😎`)
   }
 
   const saveLocalStorage = (): void => {
@@ -243,11 +279,15 @@ export default function App() {
       return
     }
 
-    setShowNotification(false)
+    toggleNotification(false)
   }
 
   const handleLightsOut = (): void => {
-    setLightsOut(!lightsOut)
+    const state = !lightsOut
+    setLightsOut(state)
+
+    const message = state ? "enabled " : "disabled"
+    toggleNotification(true, `Lights Out ${message}`)
   }
 
   const message = parse(messages[messageIndex])
@@ -263,10 +303,10 @@ export default function App() {
             soft light
           </h1>
         </Link>
-        <Tooltip title="Lights Out">
+        <Tooltip title="Toggle Lights Out">
           <Fab
             style={{ background: "var(--light)" }}
-            aria-label="Lights Out"
+            aria-label="Toggle Lights Out"
             size="small"
             onClick={handleLightsOut}
           >
@@ -276,21 +316,21 @@ export default function App() {
         {videoSupported && (
           <>
             {showVideo ? (
-              <Tooltip title="Hide Video Preview">
+              <Tooltip title="Turn Off Camera">
                 <Fab
                   style={{ background: "var(--light)" }}
-                  aria-label="Hide Video Preview"
+                  aria-label="Turn Off Camera"
                   size="small"
-                  onClick={toggleVideoPreview}
+                  onClick={handleCameraOff}
                 >
                   <VideocamOff style={{ color: hexWithAlpha }} />
                 </Fab>
               </Tooltip>
             ) : (
-              <Tooltip title="Show Video Preview">
+              <Tooltip title="Turn On Camera">
                 <Fab
                   style={{ background: "var(--light)" }}
-                  aria-label="Show Video Preview"
+                  aria-label="Turn On Camera"
                   size="small"
                   onClick={toggleVideoPreview}
                 >
@@ -300,11 +340,34 @@ export default function App() {
             )}
           </>
         )}
+        {fullscreen ? (
+          <Tooltip title="Exit Fullscreen">
+            <Fab
+              style={{ background: "var(--light)" }}
+              aria-label="Exit Fullscreen"
+              size="small"
+              onClick={() => toggleFullscreen(false)}
+            >
+              <FullscreenExit style={{ color: hexWithAlpha }} />
+            </Fab>
+          </Tooltip>
+        ) : (
+          <Tooltip title="Enter Fullscreen">
+            <Fab
+              style={{ background: "var(--light)" }}
+              aria-label="Enter Fullscreen"
+              size="small"
+              onClick={() => toggleFullscreen(true)}
+            >
+              <Fullscreen style={{ color: hexWithAlpha }} />
+            </Fab>
+          </Tooltip>
+        )}
         <Tooltip title="Duplicate Tab">
           <a target="_blank" href="/">
             <Fab
               style={{ background: "var(--light)" }}
-              aria-label="Lights Out"
+              aria-label="Duplicate Tab"
               size="small"
             >
               <OpenInNew style={{ color: hexWithAlpha }} />
@@ -332,7 +395,7 @@ export default function App() {
           <h2
             tabIndex={2}
             aria-label="description of soft light"
-            className="text-2xl text-center align-top"
+            className="lg:text-2xl md:text-xl sm:text-base text-center"
           >
             {message}
           </h2>
@@ -347,7 +410,7 @@ export default function App() {
           />
         )}
       </div>
-      <div className="inline-grid px-8 inline-grid grid-cols-toolbar gap-x-4 toolbar">
+      <div className="inline-grid px-8 inline-grid grid-cols-toolbar toolbar">
         <Tooltip title="Color Picker">
           <IconButton
             edge="start"
@@ -382,8 +445,8 @@ export default function App() {
       </div>
       <Snackbar
         className="mt-16"
-        open={showNotification}
-        autoHideDuration={6000}
+        open={state.notification.show}
+        autoHideDuration={4000}
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
         onClose={handleNotificationClose}
       >
@@ -392,10 +455,7 @@ export default function App() {
           onClose={handleNotificationClose}
           severity="success"
         >
-          {`Saved default soft light as ${formatColor(
-            state.defaultColor.hex,
-            state.defaultColor.rgb.a
-          )} 👍`}
+          {state.notification.message}
         </Alert>
       </Snackbar>
     </div>
