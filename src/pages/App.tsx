@@ -271,10 +271,11 @@ export default function App() {
     >
       <div className="pt-4 inline-grid grid-cols-appbar gap-x-4">
         <Link href="/" tabIndex={1}>
-          <h1 className="pl-4 text-lg text-shadow" aria-label="soft light">
+          <h1 className="px-4 text-lg text-shadow" aria-label="soft light">
             soft light
           </h1>
         </Link>
+        <div />
         {fullscreen ? (
           <Tooltip title="Exit Fullscreen">
             <Fab
@@ -364,7 +365,9 @@ export default function App() {
         </div>
       </div>
       <div className="place-self-center w-80">
-        {showVideo && <video id="camera" muted autoPlay />}
+        {showVideo && (
+          <video className="rounded-md" id="camera" muted autoPlay />
+        )}
       </div>
       <div className="p-4 max-w-lg place-self-center align-top">
         {showPicker && (
@@ -389,7 +392,7 @@ export default function App() {
       <div className="inline-grid px-8 inline-grid grid-cols-toolbar toolbar">
         <Tooltip title="Color Picker">
           <IconButton
-            className="iconButton"
+            className="iconButton place-self-center"
             edge="start"
             aria-label="Color Picker"
             onClick={() => togglePalette(false)}
@@ -410,7 +413,7 @@ export default function App() {
         </div>
         <Tooltip title="Color Palette">
           <IconButton
-            className="iconButton"
+            className="iconButton place-self-center"
             edge="end"
             aria-label="Color Palette"
             onClick={() => togglePalette(true)}

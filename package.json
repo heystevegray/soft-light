@@ -1,7 +1,7 @@
 {
   "name": "soft-light",
   "private": true,
-  "description": "A simplified bare-bones starter for Gatsby",
+  "description": "Free video conference lighting from your screen.",
   "version": "0.1.0",
   "license": "0BSD",
   "scripts": {
