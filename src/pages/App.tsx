@@ -63,7 +63,8 @@ const constraints: MediaStreamConstraints = {
 }
 
 export default function App() {
-  const storage = localStorage.getItem(STORAGE_KEY)
+  const storage =
+    typeof window !== "undefined" && window.localStorage.getItem(STORAGE_KEY)
   const storageState: State = (storage && JSON.parse(storage)) || initialState
   const [showPicker, setShowPicker] = useState(false)
   const [lightsOut, setLightsOut] = useState(false)
@@ -158,35 +159,6 @@ export default function App() {
   }
 
   const startVideoStream = (video: HTMLVideoElement): void => {
-    // Older browsers might not implement mediaDevices at all, so we set an empty object first
-    if (navigator.mediaDevices === undefined) {
-      navigator.mediaDevices = {}
-    }
-
-    // Some browsers partially implement mediaDevices. We can't just assign an object
-    // with getUserMedia as it would overwrite existing properties.
-    // Here, we will just add the getUserMedia property if it's missing.
-    if (navigator.mediaDevices.getUserMedia === undefined) {
-      navigator.mediaDevices.getUserMedia = function (constraints) {
-        // First get ahold of the legacy getUserMedia, if present
-        var getUserMedia =
-          navigator?.webkitGetUserMedia || navigator?.mozGetUserMedia
-
-        // Some browsers just don't implement it - return a rejected promise with an error
-        // to keep a consistent interface
-        if (!getUserMedia) {
-          return Promise.reject(
-            new Error("getUserMedia is not implemented in this browser")
-          )
-        }
-
-        // Otherwise, wrap the call to the old navigator.getUserMedia with a Promise
-        return new Promise(function (resolve, reject) {
-          getUserMedia.call(navigator, constraints, resolve, reject)
-        })
-      }
-    }
-
     navigator.getUserMedia(
       constraints,
       stream => {
@@ -364,15 +336,16 @@ export default function App() {
           </Tooltip>
         )}
         <Tooltip title="Duplicate Tab">
-          <a target="_blank" href="/">
-            <Fab
-              style={{ background: "var(--light)" }}
-              aria-label="Duplicate Tab"
-              size="small"
-            >
-              <OpenInNew style={{ color: hexWithAlpha }} />
-            </Fab>
-          </a>
+          <Fab
+            style={{ background: "var(--light)" }}
+            aria-label="Duplicate Tab"
+            size="small"
+            onClick={() => {
+              window.open("/", "_blank")
+            }}
+          >
+            <OpenInNew style={{ color: hexWithAlpha }} />
+          </Fab>
         </Tooltip>
         <div className="pr-4">
           <Tooltip title="Toggle Edit">
@@ -413,8 +386,8 @@ export default function App() {
       <div className="inline-grid px-8 inline-grid grid-cols-toolbar toolbar">
         <Tooltip title="Color Picker">
           <IconButton
+            className="iconButton"
             edge="start"
-            color="inherit"
             aria-label="Color Picker"
             onClick={() => togglePalette(false)}
           >
@@ -434,9 +407,9 @@ export default function App() {
         </div>
         <Tooltip title="Color Palette">
           <IconButton
+            className="iconButton"
             edge="end"
             aria-label="Color Palette"
-            color="inherit"
             onClick={() => togglePalette(true)}
           >
             <PaletteIcon className="icon" />
