@@ -20,7 +20,7 @@ import Picker from "../components/Picker/Picker"
 import { State } from "../interfaces/State"
 import adapter from "webrtc-adapter"
 import SEO from "../components/seo"
-import Footer from "../components/Footer/footer"
+import Footer from "../components/Footer/Footer"
 
 const messages = [
   "Free lighting what's up",
@@ -274,7 +274,7 @@ export default function App() {
       <SEO title="soft light" />
       <div className="pt-4 inline-grid grid-cols-appbar gap-x-4">
         <Link href="/" tabIndex={1}>
-          <h1 className="px-4 text-lg text-shadow" aria-label="soft light">
+          <h1 className="pl-4 text-lg text-shadow" aria-label="soft light">
             soft light
           </h1>
         </Link>
