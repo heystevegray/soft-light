@@ -14,7 +14,7 @@ module.exports = {
     },
     extend: {
       gridTemplateRows: {
-        layout: "auto minmax(0, auto) 1fr 3fr 64px",
+        layout: "auto minmax(0, auto) 1fr 3fr auto",
       },
       gridTemplateColumns: {
         appbar: "auto 1fr auto auto auto auto auto",

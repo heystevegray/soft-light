@@ -20,6 +20,7 @@ import Picker from "../components/Picker/Picker"
 import { State } from "../interfaces/State"
 import adapter from "webrtc-adapter"
 import SEO from "../components/seo"
+import Footer from "../components/Footer/footer"
 
 const messages = [
   "Free lighting what's up",
@@ -402,16 +403,19 @@ export default function App() {
             <ColorizeIcon className="icon" />
           </IconButton>
         </Tooltip>
-        <div className="place-self-center fab">
-          <Tooltip title="Save">
-            <Fab
-              style={{ background: "var(--light)" }}
-              aria-label="Save"
-              onClick={saveDefault}
-            >
-              <Save style={{ color: hexWithAlpha }} />
-            </Fab>
-          </Tooltip>
+        <div className="inline-grid justify-center">
+          <div className="place-self-center fab">
+            <Tooltip title="Save" placement="top">
+              <Fab
+                style={{ background: "var(--light)" }}
+                aria-label="Save"
+                onClick={saveDefault}
+              >
+                <Save style={{ color: hexWithAlpha }} />
+              </Fab>
+            </Tooltip>
+          </div>
+          <Footer />
         </div>
         <Tooltip title="Color Palette">
           <IconButton
