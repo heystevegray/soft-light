@@ -19,6 +19,7 @@ import parse from "html-react-parser"
 import Picker from "../components/Picker/Picker"
 import { State } from "../interfaces/State"
 import adapter from "webrtc-adapter"
+import SEO from "../components/seo"
 
 const messages = [
   "Free lighting what's up",
@@ -269,6 +270,7 @@ export default function App() {
       className="font-sans grid gap-4 grid-rows-layout base"
       style={{ background: hexWithAlpha }}
     >
+      <SEO title="soft light" />
       <div className="pt-4 inline-grid grid-cols-appbar gap-x-4">
         <Link href="/" tabIndex={1}>
           <h1 className="px-4 text-lg text-shadow" aria-label="soft light">
@@ -279,7 +281,7 @@ export default function App() {
         {fullscreen ? (
           <Tooltip title="Exit Fullscreen">
             <Fab
-              className="lg:visible md:invisible sm:invisible"
+              className="lg:visible invisible"
               style={{ background: "var(--light)" }}
               aria-label="Exit Fullscreen"
               size="small"
@@ -291,7 +293,7 @@ export default function App() {
         ) : (
           <Tooltip title="Enter Fullscreen">
             <Fab
-              className="lg:visible md:invisible sm:invisible"
+              className="lg:visible invisible"
               style={{ background: "var(--light)" }}
               aria-label="Enter Fullscreen"
               size="small"
@@ -303,7 +305,7 @@ export default function App() {
         )}
         <Tooltip title="Duplicate Tab">
           <Fab
-            className="lg:visible md:invisible sm:invisible"
+            className="lg:visible invisible"
             style={{ background: "var(--light)" }}
             aria-label="Duplicate Tab"
             size="small"
