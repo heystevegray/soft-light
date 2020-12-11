@@ -47,3 +47,13 @@ h2 {
 a {
   color: var(--link) !important;
 }
+
+button:focus {
+  outline: none;
+}
+
+video {
+  transform: rotateY(180deg);
+  -webkit-transform: rotateY(180deg); /* Safari and Chrome */
+  -moz-transform: rotateY(180deg); /* Firefox */
+}

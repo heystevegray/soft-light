@@ -1,7 +1,7 @@
 {
   "name": "soft-light",
   "private": true,
-  "description": "A simplified bare-bones starter for Gatsby",
+  "description": "Free video conference lighting from your screen.",
   "version": "0.1.0",
   "license": "0BSD",
   "scripts": {
@@ -27,7 +27,8 @@
     "react": "^16.14.0",
     "react-color": "^2.19.3",
     "react-dom": "^16.14.0",
-    "tailwindcss": "^2.0.1"
+    "tailwindcss": "^2.0.1",
+    "webrtc-adapter": "^7.7.0"
   },
   "devDependencies": {
     "prettier": "2.1.2",

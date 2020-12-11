@@ -1,19 +1,24 @@
-import React, { useState, useEffect, ReactElement } from "react"
+import React, { useState, useEffect } from "react"
 import Fab from "@material-ui/core/Fab"
 import ColorizeIcon from "@material-ui/icons/Colorize"
 import PaletteIcon from "@material-ui/icons/Palette"
 import { IconButton, Snackbar, Link, Tooltip } from "@material-ui/core"
 import Alert from "@material-ui/lab/Alert"
-import { Save, Edit, PowerSettingsNew, OpenInNew } from "@material-ui/icons"
-import { SwatchesPicker, ChromePicker, ColorResult } from "react-color"
+import {
+  Save,
+  Edit,
+  PowerSettingsNew,
+  OpenInNew,
+  Videocam,
+  VideocamOff,
+  Fullscreen,
+  FullscreenExit,
+} from "@material-ui/icons"
+import { ColorResult } from "react-color"
 import parse from "html-react-parser"
-
-interface State {
-  defaultColor: ColorResult
-  backgroundColor: ColorResult
-  recentColors: ColorResult[]
-  usePalette: boolean
-}
+import Picker from "../components/Picker/Picker"
+import { State } from "../interfaces/State"
+import adapter from "webrtc-adapter"
 
 const messages = [
   "Free lighting what's up",
@@ -29,7 +34,7 @@ const messages = [
 
 const STORAGE_KEY = "soft-light-data"
 
-const initialState: State = {
+export const initialState: State = {
   defaultColor: {
     hex: "#000000",
     hsl: { h: 0, s: 0, l: 0, a: 0 },
@@ -40,19 +45,37 @@ const initialState: State = {
     hsl: { h: 0, s: 0, l: 0, a: 0 },
     rgb: { r: 0, g: 0, b: 0, a: 0 },
   },
-  recentColors: [],
   usePalette: false,
+  notification: { message: "", show: false },
+}
+
+const off: ColorResult = {
+  hex: "#000000",
+  hsl: { h: 0, s: 0, l: 0, a: 1 },
+  rgb: { r: 0, g: 0, b: 0, a: 1 },
+}
+
+const constraints: MediaStreamConstraints = {
+  audio: false,
+  video: {
+    facingMode: "user",
+  },
 }
 
 export default function App() {
-  const storage = localStorage.getItem(STORAGE_KEY)
+  const storage =
+    typeof window !== "undefined" && window.localStorage.getItem(STORAGE_KEY)
+  const storageState: State = (storage && JSON.parse(storage)) || initialState
   const [showPicker, setShowPicker] = useState(false)
   const [lightsOut, setLightsOut] = useState(false)
   const [messageIndex, setMessageIndex] = useState(0)
   const [hexWithAlpha, setHexWithAlpha] = useState("")
-  const [showNotification, setShowNotification] = useState(false)
-  const [state, setState] = useState<State>(
-    (storage && JSON.parse(storage)) || initialState
+  const [showVideo, setShowVideo] = useState(false)
+  const [videoSupported, setVideoSupported] = useState(false)
+  const [fullscreen, setFullscreen] = useState(false)
+  const [state, setState] = useState<State>(storageState)
+  const [oldColor, setOldColor] = useState<ColorResult>(
+    storageState.backgroundColor
   )
 
   useEffect(() => {
@@ -66,26 +89,111 @@ export default function App() {
   }, [state.backgroundColor])
 
   useEffect(() => {
-    const alpha = state.defaultColor?.rgb.a || 1
-    const hex = state.defaultColor?.hex || "#000000"
-    setState(state => ({ ...state, backgroundColor: state.defaultColor }))
-    setHexWithAlpha(formatColor(hex, alpha))
+    let color = oldColor
+
+    if (lightsOut) {
+      setOldColor(state.backgroundColor)
+      color = off
+    }
+
+    setState(state => ({ ...state, backgroundColor: color }))
+  }, [lightsOut])
+
+  useEffect(() => {
+    const init = async (): Promise<void> => {
+      const alpha = storageState.defaultColor?.rgb.a || 1
+      const hex = storageState.defaultColor?.hex || "#000000"
+      setHexWithAlpha(formatColor(hex, alpha))
+
+      try {
+        await navigator.mediaDevices.enumerateDevices().then(devices => {
+          const cameras = devices.filter(d => d.kind === "videoinput")
+          if (cameras && cameras.length > 0) {
+            setVideoSupported(true)
+          } else {
+            setVideoSupported(false)
+          }
+        })
+      } catch (error) {
+        setVideoSupported(false)
+      }
+    }
+
+    init()
   }, [])
 
   useEffect(() => {
-    const off: ColorResult = {
-      hex: "#000000",
-      hsl: { h: 0, s: 0, l: 0, a: 1 },
-      rgb: { r: 0, g: 0, b: 0, a: 1 },
+    if (videoSupported) {
+      const video: HTMLVideoElement = document.querySelector("video")
+
+      if (showVideo) {
+        startVideoStream(video)
+        toggleNotification(true, `Camera enabled 📷`)
+      } else {
+        stopVideoStream(video)
+      }
     }
+  }, [showVideo])
 
-    const color = lightsOut ? off : state.defaultColor
+  const toggleFullscreen = (isFullscreen: boolean): void => {
+    setFullscreen(isFullscreen)
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => {
+        toggleNotification(true, "Fullscreen enabled 👌")
+      })
+    } else {
+      setFullscreen(isFullscreen)
+      if (document.exitFullscreen) {
+        document.exitFullscreen().then(() => {
+          toggleNotification(true, "Fullscreen disabled 🤙 🤙")
+        })
+      }
+    }
+  }
 
+  const toggleNotification = (show: boolean, message = "") => {
     setState(state => ({
       ...state,
-      backgroundColor: color,
+      notification: { show, message },
     }))
-  }, [lightsOut])
+  }
+
+  const startVideoStream = (video: HTMLVideoElement): void => {
+    navigator.getUserMedia(
+      constraints,
+      stream => {
+        if (video) {
+          video.srcObject = stream
+        }
+      },
+      error => {
+        console.log(error)
+      }
+    )
+  }
+
+  const stopVideoStream = (video: HTMLVideoElement): void => {
+    if (video) {
+      // A video's MediaStream object is available through its srcObject attribute
+      const stream = video.srcObject
+      const tracks = stream.getTracks()
+
+      tracks.forEach(track => {
+        track.stop()
+      })
+
+      video.srcObject = null
+    }
+  }
+
+  const handleCameraOff = (): void => {
+    toggleNotification(true, `Camera disabled 👍`)
+    toggleVideoPreview()
+  }
+
+  const toggleVideoPreview = (): void => {
+    setShowVideo(!showVideo)
+  }
 
   const formatColor = (hex = "#000000", alpha = 1): string => {
     const brightness = Math.round(alpha * 255).toString(16)
@@ -101,13 +209,17 @@ export default function App() {
     setState(state => ({ ...state, backgroundColor: color }))
 
     // Hide notifications
-    if (showNotification) {
-      setShowNotification(false)
+    if (state.notification.show) {
+      toggleNotification(false)
     }
   }
 
   const handleEdit = (): void => {
-    setShowPicker(!showPicker)
+    const state = !showPicker
+    setShowPicker(state)
+
+    const message = state ? "enabled 🎨" : "disabled"
+    toggleNotification(true, `Edit mode ${message}`)
 
     // Reset to the default color if the user did not save?????
     // setState(state => ({ ...state, backgroundColor: state.defaultColor }))
@@ -120,9 +232,9 @@ export default function App() {
   }
 
   const saveDefault = (): void => {
-    setState({ ...state, defaultColor: state.backgroundColor })
+    setState(state => ({ ...state, defaultColor: state.backgroundColor }))
     setShowPicker(false)
-    setShowNotification(true)
+    toggleNotification(true, `Saved default soft light as ${hexWithAlpha} 😎`)
   }
 
   const saveLocalStorage = (): void => {
@@ -130,10 +242,6 @@ export default function App() {
       STORAGE_KEY,
       JSON.stringify({
         ...state,
-        recentColors: [
-          formatColor(state.backgroundColor.hex, state.backgroundColor.rgb.a),
-          ...state.recentColors.slice(0, 4),
-        ],
       })
     )
   }
@@ -143,19 +251,15 @@ export default function App() {
       return
     }
 
-    setShowNotification(false)
+    toggleNotification(false)
   }
 
   const handleLightsOut = (): void => {
-    setLightsOut(!lightsOut)
-  }
+    const state = !lightsOut
+    setLightsOut(state)
 
-  const swatchStyles = {
-    default: {
-      overflow: {
-        backgroundColor: "var(--dark)",
-      },
-    },
+    const message = state ? "enabled " : "disabled"
+    toggleNotification(true, `Lights Out ${message}`)
   }
 
   const message = parse(messages[messageIndex])
@@ -167,36 +271,91 @@ export default function App() {
     >
       <div className="pt-4 inline-grid grid-cols-appbar gap-x-4">
         <Link href="/" tabIndex={1}>
-          <h1 className="pl-4 text-lg text-shadow" aria-label="soft light">
+          <h1 className="px-4 text-lg text-shadow" aria-label="soft light">
             soft light
           </h1>
         </Link>
-        <Tooltip title="Lights Out">
+        <div />
+        {fullscreen ? (
+          <Tooltip title="Exit Fullscreen">
+            <Fab
+              className="lg:visible md:invisible sm:invisible"
+              style={{ background: "var(--light)" }}
+              aria-label="Exit Fullscreen"
+              size="small"
+              onClick={() => toggleFullscreen(false)}
+            >
+              <FullscreenExit style={{ color: hexWithAlpha }} />
+            </Fab>
+          </Tooltip>
+        ) : (
+          <Tooltip title="Enter Fullscreen">
+            <Fab
+              className="lg:visible md:invisible sm:invisible"
+              style={{ background: "var(--light)" }}
+              aria-label="Enter Fullscreen"
+              size="small"
+              onClick={() => toggleFullscreen(true)}
+            >
+              <Fullscreen style={{ color: hexWithAlpha }} />
+            </Fab>
+          </Tooltip>
+        )}
+        <Tooltip title="Duplicate Tab">
+          <Fab
+            className="lg:visible md:invisible sm:invisible"
+            style={{ background: "var(--light)" }}
+            aria-label="Duplicate Tab"
+            size="small"
+            onClick={() => {
+              window.open("/", "_blank")
+            }}
+          >
+            <OpenInNew style={{ color: hexWithAlpha }} />
+          </Fab>
+        </Tooltip>
+        <Tooltip title="Toggle Lights Out">
           <Fab
             style={{ background: "var(--light)" }}
-            aria-label="Lights Out"
+            aria-label="Toggle Lights Out"
             size="small"
             onClick={handleLightsOut}
           >
             <PowerSettingsNew style={{ color: hexWithAlpha }} />
           </Fab>
         </Tooltip>
-        <Tooltip title="Duplicate Tab">
-          <a target="_blank" href="/">
-            <Fab
-              style={{ background: "var(--light)" }}
-              aria-label="Lights Out"
-              size="small"
-            >
-              <OpenInNew style={{ color: hexWithAlpha }} />
-            </Fab>
-          </a>
-        </Tooltip>
+        {videoSupported && (
+          <>
+            {showVideo ? (
+              <Tooltip title="Turn Off Camera">
+                <Fab
+                  style={{ background: "var(--light)" }}
+                  aria-label="Turn Off Camera"
+                  size="small"
+                  onClick={handleCameraOff}
+                >
+                  <VideocamOff style={{ color: hexWithAlpha }} />
+                </Fab>
+              </Tooltip>
+            ) : (
+              <Tooltip title="Turn On Camera">
+                <Fab
+                  style={{ background: "var(--light)" }}
+                  aria-label="Turn On Camera"
+                  size="small"
+                  onClick={toggleVideoPreview}
+                >
+                  <Videocam style={{ color: hexWithAlpha }} />
+                </Fab>
+              </Tooltip>
+            )}
+          </>
+        )}
         <div className="pr-4">
-          <Tooltip title="Edit">
+          <Tooltip title="Toggle Edit">
             <Fab
               style={{ background: "var(--light)" }}
-              aria-label="Edit"
+              aria-label="Toggle Edit"
               size="small"
               onClick={handleEdit}
             >
@@ -205,36 +364,36 @@ export default function App() {
           </Tooltip>
         </div>
       </div>
-      <div className="p-4 max-w-lg place-self-center align-middle">
-        <h2
-          tabIndex={2}
-          aria-label="description of soft light"
-          className="text-2xl text-center "
-        >
-          {message}
-        </h2>
+      <div className="place-self-center w-80">
+        {showVideo && (
+          <video className="rounded-md" id="camera" muted autoPlay />
+        )}
       </div>
-      {state.usePalette ? (
-        <SwatchesPicker
-          className="place-self-center"
-          styles={swatchStyles}
-          color={state.backgroundColor.rgb}
-          onChange={handleColorChange}
-          onChangeComplete={handleColorChange}
-        />
-      ) : (
-        <ChromePicker
-          className="place-self-center"
-          color={state.backgroundColor.rgb}
-          onChange={handleColorChange}
-          onChangeComplete={handleColorChange}
-        />
-      )}
-      <div className="inline-grid px-8 inline-grid grid-cols-toolbar gap-x-4 toolbar">
+      <div className="p-4 max-w-lg place-self-center align-top">
+        {showPicker && (
+          <h2
+            tabIndex={2}
+            aria-label="description of soft light"
+            className="lg:text-2xl md:text-xl sm:text-base text-center"
+          >
+            {message}
+          </h2>
+        )}
+      </div>
+      <div className="place-self-center">
+        {showPicker && (
+          <Picker
+            usePalette={state.usePalette}
+            state={state || initialState}
+            onChange={handleColorChange}
+          />
+        )}
+      </div>
+      <div className="inline-grid px-8 inline-grid grid-cols-toolbar toolbar">
         <Tooltip title="Color Picker">
           <IconButton
+            className="iconButton place-self-center"
             edge="start"
-            color="inherit"
             aria-label="Color Picker"
             onClick={() => togglePalette(false)}
           >
@@ -254,9 +413,9 @@ export default function App() {
         </div>
         <Tooltip title="Color Palette">
           <IconButton
+            className="iconButton place-self-center"
             edge="end"
             aria-label="Color Palette"
-            color="inherit"
             onClick={() => togglePalette(true)}
           >
             <PaletteIcon className="icon" />
@@ -265,8 +424,8 @@ export default function App() {
       </div>
       <Snackbar
         className="mt-16"
-        open={showNotification}
-        autoHideDuration={6000}
+        open={state.notification.show}
+        autoHideDuration={4000}
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
         onClose={handleNotificationClose}
       >
@@ -275,10 +434,7 @@ export default function App() {
           onClose={handleNotificationClose}
           severity="success"
         >
-          {`Saved default soft light as ${formatColor(
-            state.defaultColor.hex,
-            state.defaultColor.rgb.a
-          )} 👍`}
+          {state.notification.message}
         </Alert>
       </Snackbar>
     </div>
