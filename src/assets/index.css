@@ -35,6 +35,11 @@ h2 {
   background: var(--dark);
 }
 
+.footer {
+  background: var(--dark);
+  color: var(--light);
+}
+
 .alert {
   color: var(--dark) !important;
   background: var(--light) !important;

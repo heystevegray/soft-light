@@ -11,16 +11,18 @@ module.exports = {
     siteUrl: `https://softlight.dev/`,
     description: `Free video conference lighting from your screen.`,
     author: `Stephen Gray`,
-    icons: [
+    background_color: "#303030",
+    display: "fullscreen",
+    scope: "/",
+    theme_color: "#e9e9e9",
+    icon: `/icon.png`,
+    shortcuts: [
       {
-        src: "/android-chrome-192x192.png",
-        sizes: "192x192",
-        type: "image/png",
-      },
-      {
-        src: "/android-chrome-512x512.png",
-        sizes: "512x512",
-        type: "image/png",
+        name: "soft light",
+        short_name: "soft light",
+        description: `Free video conference lighting from your screen.`,
+        url: "https://softlight.dev/?source=pwa",
+        icons: [{ src: "/icon.png" }],
       },
     ],
   },
