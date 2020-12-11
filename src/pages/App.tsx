@@ -275,6 +275,44 @@ export default function App() {
             soft light
           </h1>
         </Link>
+        {fullscreen ? (
+          <Tooltip title="Exit Fullscreen">
+            <Fab
+              className="lg:visible md:invisible sm:invisible"
+              style={{ background: "var(--light)" }}
+              aria-label="Exit Fullscreen"
+              size="small"
+              onClick={() => toggleFullscreen(false)}
+            >
+              <FullscreenExit style={{ color: hexWithAlpha }} />
+            </Fab>
+          </Tooltip>
+        ) : (
+          <Tooltip title="Enter Fullscreen">
+            <Fab
+              className="lg:visible md:invisible sm:invisible"
+              style={{ background: "var(--light)" }}
+              aria-label="Enter Fullscreen"
+              size="small"
+              onClick={() => toggleFullscreen(true)}
+            >
+              <Fullscreen style={{ color: hexWithAlpha }} />
+            </Fab>
+          </Tooltip>
+        )}
+        <Tooltip title="Duplicate Tab">
+          <Fab
+            className="lg:visible md:invisible sm:invisible"
+            style={{ background: "var(--light)" }}
+            aria-label="Duplicate Tab"
+            size="small"
+            onClick={() => {
+              window.open("/", "_blank")
+            }}
+          >
+            <OpenInNew style={{ color: hexWithAlpha }} />
+          </Fab>
+        </Tooltip>
         <Tooltip title="Toggle Lights Out">
           <Fab
             style={{ background: "var(--light)" }}
@@ -312,41 +350,6 @@ export default function App() {
             )}
           </>
         )}
-        {fullscreen ? (
-          <Tooltip title="Exit Fullscreen">
-            <Fab
-              style={{ background: "var(--light)" }}
-              aria-label="Exit Fullscreen"
-              size="small"
-              onClick={() => toggleFullscreen(false)}
-            >
-              <FullscreenExit style={{ color: hexWithAlpha }} />
-            </Fab>
-          </Tooltip>
-        ) : (
-          <Tooltip title="Enter Fullscreen">
-            <Fab
-              style={{ background: "var(--light)" }}
-              aria-label="Enter Fullscreen"
-              size="small"
-              onClick={() => toggleFullscreen(true)}
-            >
-              <Fullscreen style={{ color: hexWithAlpha }} />
-            </Fab>
-          </Tooltip>
-        )}
-        <Tooltip title="Duplicate Tab">
-          <Fab
-            style={{ background: "var(--light)" }}
-            aria-label="Duplicate Tab"
-            size="small"
-            onClick={() => {
-              window.open("/", "_blank")
-            }}
-          >
-            <OpenInNew style={{ color: hexWithAlpha }} />
-          </Fab>
-        </Tooltip>
         <div className="pr-4">
           <Tooltip title="Toggle Edit">
             <Fab
